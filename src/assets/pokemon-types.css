@@ -1,0 +1,20 @@
+/* Cores por tipo de Pokémon — compartilhado entre PokemonCard e CardPack.
+   Importe este arquivo uma vez em main.js:
+   import './assets/pokemon-types.css' */
+
+.grass { background: #78C850; }
+.fire { background: #F08030; }
+.water { background: #6890F0; }
+.bug { background: #A8B820; }
+.normal { background: #A8A878; }
+.electric { background: #F8D030; }
+.poison { background: #A040A0; }
+.ground { background: #E0C068; }
+.psychic { background: #F85888; }
+.rock { background: #B8A038; }
+.ghost { background: #705898; }
+.ice { background: #98D8D8; }
+.dragon { background: #7038F8; }
+.fairy { background: #EE99AC; }
+.fighting { background: #C03028; }
+.flying { background: #A890F0; }
