@@ -4,7 +4,7 @@ title Iniciar Projeto Vue
 color 0A
 
 echo ========================================
-echo   Iniciando Projeto Vue.js
+echo   Iniciando Projeto Vue.js (Modo Usuario)
 echo ========================================
 echo.
 
@@ -19,57 +19,61 @@ exit /b 1
 
 :CHECK_NODE
 where node >nul 2>nul
-if errorlevel 1 goto INSTALL_NODE
-echo [OK] Node.js encontrado.
+if errorlevel 1 goto INSTALL_PORTABLE_NODE
+echo [OK] Node.js global encontrado.
 node -v
 echo.
 goto CHECK_NPM
 
-:INSTALL_NODE
-echo [AVISO] Node.js nao foi encontrado no seu computador.
-echo Iniciando o download e instalacao automatica (Node.js LTS)...
+:INSTALL_PORTABLE_NODE
+:: Define um diretório local dentro do perfil do usuário atual que não requer admin
+set "LOCAL_NODE_DIR=%USERPROFILE%\NodeJS_Portable"
+set "NODE_BIN_DIR=%LOCAL_NODE_DIR%\node-v20.11.1-win-x64"
+
+:: Caso o Node portátil já tenha sido baixado em uma execução anterior, reutiliza-o
+if exist "%NODE_BIN_DIR%\node.exe" (
+    echo [INFO] Node.js portátil detectado no seu perfil de usuário.
+    set "PATH=%NODE_BIN_DIR%;%PATH%"
+    goto CHECK_NPM
+)
+
+echo [AVISO] Node.js nao foi encontrado no sistema e voce nao eh Administrador.
+echo Iniciando o download da versao PORTATIL do Node.js LTS...
 echo.
 
-:: Define a URL do instalador MSI oficial do Node.js e o nome do arquivo temporário
-set "NODE_URL=https://nodejs.org"
-set "NODE_MSI=%temp%\node_install.msi"
+set "NODE_ZIP_URL=https://nodejs.org"
+set "NODE_ZIP=%temp%\node_portable.zip"
 
-echo Baixando o instalador do Node.js...
-powershell -Command "(New-Object Net.WebClient).DownloadFile('%NODE_URL%', '%NODE_MSI%')"
+echo Baixando o arquivo ZIP do Node.js (Aguarde)...
+powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('%NODE_ZIP_URL%', '%NODE_ZIP%')"
 if errorlevel 1 goto DOWNLOAD_FAIL
 
-echo Instalando o Node.js em segundo plano...
-echo (Uma janela de permissao de Administrador pode aparecer)
-:: Roda o MSI de forma silenciosa e espera a conclusão
-start /wait msiexec /i "%NODE_MSI%" /quiet /qn /norestart
+echo Extraindo os arquivos no seu perfil de usuário...
+if not exist "%LOCAL_NODE_DIR%" mkdir "%LOCAL_NODE_DIR%"
+powershell -Command "Expand-Archive -Path '%NODE_ZIP%' -DestinationPath '%LOCAL_NODE_DIR%' -Force"
 
-:: Remove o arquivo temporário
-del "%NODE_MSI%" 2>nul
+:: Remove o arquivo temporário baixado
+del "%NODE_ZIP%" 2>nul
 
-:: Atualiza as variáveis de ambiente na sessão atual do CMD sem precisar fechar a janela
-for /f "tokens=2*" %%a in ('reg query "HKLM\System\CurrentControlSet\Control\Session Manager\Environment" /v Path') do set "syspath=%%b"
-for /f "tokens=2*" %%a in ('reg query "HKCU\Environment" /v Path') do set "userpath=%%b"
-set "PATH=%syspath%;%userpath%"
+:: Aplica o caminho do Node portátil na sessão atual do terminal
+set "PATH=%NODE_BIN_DIR%;%PATH%"
 
-:: Re-checa se agora o Node funciona
 where node >nul 2>nul
 if errorlevel 1 goto INSTALL_FAIL_NODE
 
-echo [OK] Node.js instalado e configurado com sucesso!
+echo [OK] Node.js portatil configurado com sucesso!
 node -v
 echo.
 goto CHECK_NPM
 
 :DOWNLOAD_FAIL
-echo [ERRO] Nao foi possivel baixar o instalador do Node.js.
-echo Verifique sua conexao ou baixe manualmente em: https://nodejs.org/
+echo [ERRO] Nao foi possivel baixar o Node.js. Verifique sua internet.
 echo.
 pause
 exit /b 1
 
 :INSTALL_FAIL_NODE
-echo [ERRO] A instalacao automatica falhou ou requer reinicio do computador.
-echo Tente instalar manualmente em: https://nodejs.org/
+echo [ERRO] Falha ao configurar a versao portatil do Node.js.
 echo.
 pause
 exit /b 1
@@ -83,8 +87,7 @@ echo.
 goto CHECK_DEPS
 
 :NO_NPM
-echo [ERRO] O comando npm nao foi reconhecido, mesmo com o Node instalado.
-echo Tente reiniciar o computador e rodar este script novamente.
+echo [ERRO] O comando npm nao foi reconhecido.
 echo.
 echo Pressione qualquer tecla para fechar...
 pause >nul
@@ -98,6 +101,7 @@ echo Isso pode levar alguns minutos na primeira vez.
 echo.
 call npm install
 if errorlevel 1 goto INSTALL_FAIL
+
 echo.
 echo [OK] Dependencias instaladas com sucesso!
 echo.
